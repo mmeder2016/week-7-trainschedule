@@ -12,7 +12,8 @@
     <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
     <!-- My Stuff -->
     <link rel="stylesheet" type="text/css" href="assets/css/style.css">
-    <script src="assets/javascript/javascript.js"></script>
+    <script src="assets/javascript/app.js"></script>
+    <script src="assets/javascript/blueline.js"></script>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/live/3.0/firebase.js"></script>
     <!-- Make page resposive -->
@@ -77,6 +78,34 @@
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
+                        <h3 class="panel-title">Find Train</h3>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Add Train Form-->
+                        <form>
+                            <div class="form-group">
+                                <label for="time-input">Departure Time (HH:mm military time):</label>
+                                <input class="form-control" id="id-time-input" type="text">
+                            </div>
+                            <div class="form-group">
+                                <label for="frequency-input">Origin Station:</label>
+                                <input class="form-control" id="id-origin-input" type="number">
+                            </div>
+                            <div class="form-group">
+                                <label for="destination-input">Destination Station:</label>
+                                <input class="form-control" id="id-destination-input" type="text">
+                            </div>
+                            <button class="btn btn-default" id="id-find-train" type="submit">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Add Train Panel-->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
                         <h3 class="panel-title">Add Train</h3>
                     </div>
                     <div class="panel-body">
@@ -84,21 +113,13 @@
                         <form>
                             <div class="form-group">
                                 <label for="name-input">Train Name:</label>
-                                <input class="form-control" id="name-input" type="text">
+                                <input class="form-control" id="id-train-id-input" type="text">
                             </div>
                             <div class="form-group">
-                                <label for="destination-input">Destination:</label>
-                                <input class="form-control" id="destination-input" type="text">
+                                <label for="time-input">Departure Time From Home Station (HHMMSS):</label>
+                                <input class="form-control" id="id-departure-time-input" type="text">
                             </div>
-                            <div class="form-group">
-                                <label for="time-input">First Train Time (HH:mm military time):</label>
-                                <input class="form-control" id="time-input" type="text">
-                            </div>
-                            <div class="form-group">
-                                <label for="frequency-input">Frequency (min):</label>
-                                <input class="form-control" id="frequency-input" type="number">
-                            </div>
-                            <button class="btn btn-default" id="add-train" type="submit">Submit</button>
+                            <button class="btn btn-default" id="id-add-train" type="submit">Submit</button>
                         </form>
                     </div>
                 </div>
