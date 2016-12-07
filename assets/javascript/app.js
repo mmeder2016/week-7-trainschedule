@@ -28,7 +28,7 @@ $(document).ready(function() {
         var min = parseInt(departureTime.substr(2, 2));
         var sec = parseInt(departureTime.substr(4, 2));
 
-        if (isNan(hour) || isNan(min) || isNan(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
+        if (isNaN(hour) || isNaN(min) || isNaN(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
             alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
         } else {
             // date, hour, min, and sec are of type number
@@ -100,7 +100,7 @@ $(document).ready(function() {
         var date = new Date();
         console.log("orig time = " + date.getTime());
 
-        if (isNan(hour) || isNan(min) || isNan(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
+        if (isNaN(hour) || isNaN(min) || isNaN(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
             alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
         } else {
             try {
@@ -108,7 +108,7 @@ $(document).ready(function() {
             } catch (error) {
                 console.log(error);
             }
-            updatePage(departureTime, origin, destination);
+            updatePage(date.getTime(), origin, destination);
         }
         // Don't refresh the page!
         return false;
@@ -133,27 +133,71 @@ $(document).ready(function() {
     });
 
     function updatePage(departureTime, origin, destination) {
-        console.log('function updatePage(departureTime, origin, destination) {');
-        // find direction , inbound or outbound
+        var str = 'function updatePage(' + departureTime + ', ' + origin + ', ' + destination + ') {';
+        console.log(str);
+
+        $('#table-train').empty();
+
+        var frequency = 0;
+        var previousTrain = 0;
+
         var direction = "";
-        if (origin !== destination &&
-            (trainSchedules[0].outbound_stops.findIndex(origin) < trainSchedules[0].outbound_stops.findIndex(destination))) {
-            direction = "outbound";
-        } else {
-            direction = "inbound";
-        }
-
-        if (direction === "outbound") {
-            trainSchedules.forEach(function(json_obj) {
-                json_obj.outbound_stops.forEach(function(stop) {
-                    // if the train can get the user to their destination
-                    if (stop.station == origin && stop.departure_time > departureTime) {
-                        console.log(stop);
-                    }
-                });
+        // find direction , inbound or outbound
+        try {
+            var originIndex = trainSchedules[0].outbound_stops.findIndex(function(obj) {
+                return obj.station === origin;
             });
-        } else {
+            var destinationIndex = trainSchedules[0].outbound_stops.findIndex(function(obj) {
+                return obj.station === destination;
+            });
+            if (origin !== destination && originIndex < destinationIndex) {
+                direction = "outbound";
+            } else {
+                direction = "inbound";
+            }
 
+            if (direction === "outbound") {
+                console.log('train outbound');
+                trainSchedules.forEach(function(json_obj) {
+                    json_obj.outbound_stops.forEach(function(stop) {
+                        if (previousTrain !== 0) {
+                            frequency = stop.departure_time - previousTrain;
+                        }
+                        previousTrain = stop.departure_time;
+                        // if the train can get the user to their destination - it hasn't already passed
+                        if (stop.station === origin && stop.departure_time > departureTime) {
+                            console.log(stop);
+
+                            var now = new Date();
+                            var minAway = (now.getTime() - stop.departure_time) / 60000;
+                            var arrival = new Date(stop.arrival);
+
+                            var tr = $('<tr>');
+                            var tdOrigin = $('td').val(origin);
+                            var tdDestination = $('td').val(destination);
+                            var tdFreq = $('td').val(frequency);
+                            var tdArrival = $('td').val(arrival);
+                            var tdMinutesAway = $('td').val(minAway);
+
+                            tr.append(tdOrigin);
+                            tr.append(tdDestination);
+                            tr.append(tdFreq);
+                            tr.append(tdArrival);
+                            tr.append(tdMinutesAway);
+
+                            $('#table-train').append(tr);
+
+                        }
+                    });
+                });
+            } else if (direction === "inbound") {
+
+            } else {
+                //problem
+            }
+
+        } catch (err) {
+            console.log(err);
         }
     }
 
@@ -163,15 +207,7 @@ $(document).ready(function() {
 
     //         var frequency;
     //         // for loop to find station
-    //         var arrival = new Date();
-    //         var minAway;
 
-    //         var tr = $('<tr>');
-    //         var tdOrigin = $('td').val(origin);
-    //         var tdDestination = $('td').val(destination);
-    //         var tdFreq = $('td').val(frequency);
-    //         var tdArrival = $('td').val(arrival);
-    //         var tdMinutesAway = $('td').val(minAway);
     //         tr.append();
     //         tr.append();
     //         tr.append();
