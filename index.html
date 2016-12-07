@@ -84,8 +84,8 @@
                         <!-- Add Train Form-->
                         <form>
                             <div class="form-group">
-                                <label for="time-input">Departure Time (HH:mm military time):</label>
-                                <input class="form-control" id="id-time-input" type="text">
+                                <label for="time-input">Departure Time (HHMMSS):</label>
+                                <input class="form-control" id="id-departure-time-input" type="text">
                             </div>
                             <div class="form-group">
                                 <label for="frequency-input">Origin Station:</label>
@@ -117,9 +117,11 @@
                             </div>
                             <div class="form-group">
                                 <label for="time-input">Departure Time From Home Station (HHMMSS):</label>
-                                <input class="form-control" id="id-departure-time-input" type="text">
+                                <input class="form-control" id="id-start-time-input" type="text">
                             </div>
                             <button class="btn btn-default" id="id-add-train" type="submit">Submit</button>
+                            <button class="btn btn-default" id="id-update-schedules" type="submit">Update Schedules</button>
+                            <button class="btn btn-default" id="id-dump-schedules" type="submit">Dump Schedules</button>
                         </form>
                     </div>
                 </div>
