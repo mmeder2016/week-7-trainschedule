@@ -12,7 +12,7 @@ $(document).ready(function() {
     // Array to hold all train schedules
     var trainSchedules = [];
 
-    // Capture Button Click
+    // Add Train
     $("#id-add-train").on("click", function() {
         console.log('$("#id-add-train").on("click", function() {');
         // Init database variables.
@@ -104,8 +104,7 @@ $(document).ready(function() {
             alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
         } else {
             try {
-                //date.setHours(hour, min, sec);
-
+                date.setHours(hour, min, sec);
             } catch (error) {
                 console.log(error);
             }
@@ -171,6 +170,7 @@ $(document).ready(function() {
             if (direction === "outbound") {
                 console.log('train outbound');
                 trainSchedules.forEach(function(json_obj) {
+                    var id = json_obj.id;
                     json_obj.outbound_stops.forEach(function(stop) {
                         // If this is our departure station
                         if (stop.station === origin) {
@@ -182,11 +182,13 @@ $(document).ready(function() {
 
                         // if the train can get the user to their destination - it hasn't already passed
                         if (stop.station === origin && stop.arrival > riderDepartureTime) {
+                            var dateFormatString = 'MMMM Do YYYY, h:mm:ss a';
                             var now = new Date();
+                            $('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
                             var minAway = Math.round((stop.arrival - now.getTime()) / 60000);
-                            var arrival = moment(stop.arrival).format('MMMM Do YYYY, h:mm:ss a');
+                            var arrival = moment(stop.arrival).format(dateFormatString);
                             var tr = $('<tr class="dyn_tr">');
-                            var td_str = '<td>' + origin + '</td>' + '<td>' + destination + '</td>' + '<td>' + frequencyMin + '</td>' + '<td>' + arrival + '</td>' + '<td>' + minAway + '</td>';
+                            var td_str = '<td>' + id + '</td>' + '<td>' + origin + '</td>' + '<td>' + destination + '</td>' + '<td>' + frequencyMin + '</td>' + '<td>' + arrival + '</td>' + '<td>' + minAway + '</td>';
                             tr.append(td_str);
 
                             $('#table-train').append(tr);
