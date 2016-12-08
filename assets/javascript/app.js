@@ -104,7 +104,8 @@ $(document).ready(function() {
             alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
         } else {
             try {
-                date.setHours(hour, min, sec);
+                //date.setHours(hour, min, sec);
+
             } catch (error) {
                 console.log(error);
             }
@@ -132,25 +133,36 @@ $(document).ready(function() {
         return false;
     });
 
-    function updatePage(departureTime, origin, destination) {
-        var str = 'function updatePage(' + departureTime + ', ' + origin + ', ' + destination + ') {';
-        console.log(str);
+    function updatePage(riderDepartureTime, origin, destination) {
+        console.log('function updatePage(' + riderDepartureTime + ', ' + origin + ', ' + destination + ') {');
 
         $('#table-train').empty();
 
-        var frequency = 0;
-        var previousTrain = 0;
+        var frequencyMin = 0; // interval between trains
+        var lastTrainArrival = 0; // time last train arrived at origin station
+        var direction = ""; // inbound or outbound
 
-        var direction = "";
-        // find direction , inbound or outbound
         try {
+            // Evaluate input and test for direction, inbound or outbound
             var originIndex = trainSchedules[0].outbound_stops.findIndex(function(obj) {
                 return obj.station === origin;
             });
             var destinationIndex = trainSchedules[0].outbound_stops.findIndex(function(obj) {
                 return obj.station === destination;
             });
-            if (origin !== destination && originIndex < destinationIndex) {
+
+            // Check what happens if bad input            
+            if (originIndex === -1) {
+                alert("Origin Station " + origin + " does not exist.");
+            } else if (destinationIndex === -1) {
+                alert("Destination Station " + destination + " does not exist.");
+            } else if (origin === destination) {
+                alert("Origin and Destination Station are identical.");
+            } else {
+
+            }
+
+            if (originIndex < destinationIndex) {
                 direction = "outbound";
             } else {
                 direction = "inbound";
@@ -160,33 +172,24 @@ $(document).ready(function() {
                 console.log('train outbound');
                 trainSchedules.forEach(function(json_obj) {
                     json_obj.outbound_stops.forEach(function(stop) {
-                        if (previousTrain !== 0) {
-                            frequency = stop.departure_time - previousTrain;
+                        // If this is our departure station
+                        if (stop.station === origin) {
+                            if (lastTrainArrival !== 0) {
+                                frequencyMin = Math.round((stop.arrival - lastTrainArrival) / 60000);
+                            }
+                            lastTrainArrival = stop.arrival;
                         }
-                        previousTrain = stop.departure_time;
+
                         // if the train can get the user to their destination - it hasn't already passed
-                        if (stop.station === origin && stop.departure_time > departureTime) {
-                            console.log(stop);
-
+                        if (stop.station === origin && stop.arrival > riderDepartureTime) {
                             var now = new Date();
-                            var minAway = (now.getTime() - stop.departure_time) / 60000;
-                            var arrival = new Date(stop.arrival);
-
-                            var tr = $('<tr>');
-                            var tdOrigin = $('td').val(origin);
-                            var tdDestination = $('td').val(destination);
-                            var tdFreq = $('td').val(frequency);
-                            var tdArrival = $('td').val(arrival);
-                            var tdMinutesAway = $('td').val(minAway);
-
-                            tr.append(tdOrigin);
-                            tr.append(tdDestination);
-                            tr.append(tdFreq);
-                            tr.append(tdArrival);
-                            tr.append(tdMinutesAway);
+                            var minAway = Math.round((stop.arrival - now.getTime()) / 60000);
+                            var arrival = moment(stop.arrival).format('MMMM Do YYYY, h:mm:ss a');
+                            var tr = $('<tr class="dyn_tr">');
+                            var td_str = '<td>' + origin + '</td>' + '<td>' + destination + '</td>' + '<td>' + frequencyMin + '</td>' + '<td>' + arrival + '</td>' + '<td>' + minAway + '</td>';
+                            tr.append(td_str);
 
                             $('#table-train').append(tr);
-
                         }
                     });
                 });
@@ -200,36 +203,6 @@ $(document).ready(function() {
             console.log(err);
         }
     }
-
-
-    // for (var i = 0; i < schedules.length; i++) {
-    //     if (schedules[0].departure_time > departureTime) {
-
-    //         var frequency;
-    //         // for loop to find station
-
-    //         tr.append();
-    //         tr.append();
-    //         tr.append();
-    //         tr.append();
-    //         tr.append();
-
-    //     }
-    // }
-    //         <tr>
-    //     <td>Chicago</td>
-    //     <td>Park Ridge</td>
-    //     <td>24</td>
-    //     <td>05:20 PM</td>
-    //     <td>34</td>
-    // </tr>
-
-
-
-
-
-
-
 
     function updateSchedules() {
 
