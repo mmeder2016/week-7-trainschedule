@@ -19,6 +19,12 @@ $(document).ready(function() {
         destination: ""
     };
 
+    function resetRider() {
+        rider.departureTime = 0;
+        rider.origin = "";
+        rider.destination = "";
+    }
+
     // Add Train
     $("#id-add-train").on("click", function() {
         console.log('$("#id-add-train").on("click", function() {');
@@ -43,37 +49,6 @@ $(document).ready(function() {
             var date = new Date();
             try {
                 date.setHours(hour, min, sec);
-                var json_obj = JSON.parse(json_str_train);
-                json_obj.id = trainId;
-                json_obj.departure_time = date.getTime();
-                json_obj.outbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                json_obj.inbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                trainRef.push(json_obj);
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        // Don't refresh the page!
-        return false;
-    });
-
-    // Capture Button Click
-    $("#id-add-24-trains").on("click", function() {
-        console.log('$("#id-add-24-trains").on("click", function() {');
-        // Init database variables.
-        var dbRef = firebase.database();
-        var trainRef = dbRef.ref().child("trains");
-
-        for (var i = 0; i < 24; i++) {
-            var trainId = i.toString();
-            var date = new Date();
-
-            try {
-                date.setHours(i, 0, 0);
                 var json_obj = JSON.parse(json_str_train);
                 json_obj.id = trainId;
                 json_obj.departure_time = date.getTime();
@@ -185,10 +160,8 @@ $(document).ready(function() {
                             var subSchedule = null;
 
                             if (direction === "Outbound") {
-                                console.log('train outbound');
                                 subSchedule = json_obj.outbound_stops;
                             } else if (direction === "Inbound") {
-                                console.log('train inbound');
                                 subSchedule = json_obj.inbound_stops;
                             }
 
@@ -202,6 +175,7 @@ $(document).ready(function() {
                                 }
                                 // if the train is still usable - it hasn't already passed
                                 if (stop.station === rider.origin && stop.arrival > rider.departureTime) {
+                                    console.log(json_obj);
                                     var dateFormatString = 'MMMM Do YYYY, h:mm:ss a';
                                     var now = new Date();
                                     var str = direction + ' ' + rider.origin + ' to ' + rider.destination + ' Schedule for departure time ';
@@ -246,4 +220,78 @@ $(document).ready(function() {
     }, function(errorObject) {
         console.log("Errors handled: " + errorObject.code);
     });
+
+    firebase.database().ref().on("child_removed", function(childSnapshot) {
+        console.log('firebase.database().ref().on("child_removed", function(childSnapshot) {');
+        // Update with new schedule information
+        updateSchedules();
+        // Handle the errors
+    }, function(errorObject) {
+        console.log("Errors handled: " + errorObject.code);
+    });
+
+    // Train schedule generation
+    $("#id-add-24-trains").on("click", function() {
+        console.log('$("#id-add-24-trains").on("click", function() {');
+        resetRider();
+        // Init database variables.
+        var dbRef = firebase.database();
+        var trainRef = dbRef.ref().child("trains");
+
+        for (var i = 0; i < 24; i++) {
+            var trainId = i.toString();
+            var date = new Date();
+
+            try {
+                date.setHours(i, 0, 0);
+                var json_obj = JSON.parse(json_str_train);
+                json_obj.id = trainId;
+                json_obj.departure_time = date.getTime();
+                json_obj.outbound_stops.forEach(function(element) {
+                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
+                });
+                json_obj.inbound_stops.forEach(function(element) {
+                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
+                });
+                trainRef.push(json_obj);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+        // Don't refresh the page!
+        return false;
+    });
+        // Capture Button Click
+    $("#id-add-6-trains").on("click", function() {
+        console.log('$("#id-add-24-trains").on("click", function() {');
+        resetRider();
+        // Init database variables.
+        var dbRef = firebase.database();
+        var trainRef = dbRef.ref().child("trains");
+        var minutes = [4, 51, 14, 22, 36, 42];
+
+        for (var i = 0; i < 6; i++) {
+            var trainId = "55" + i.toString();
+            var date = new Date();
+
+            try {
+                date.setMinutes(date.getMinutes()+minutes[i], 0);
+                var json_obj = JSON.parse(json_str_train);
+                json_obj.id = trainId;
+                json_obj.departure_time = date.getTime();
+                json_obj.outbound_stops.forEach(function(element) {
+                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
+                });
+                json_obj.inbound_stops.forEach(function(element) {
+                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
+                });
+                trainRef.push(json_obj);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+        // Don't refresh the page!
+        return false;
+    });
+
 });
