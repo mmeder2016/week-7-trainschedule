@@ -39,16 +39,15 @@ $(document).ready(function() {
         // Get the hours and minutes from form
         var hour = parseInt(departureTime.substr(0, 2));
         var min = parseInt(departureTime.substr(2, 2));
-        var sec = parseInt(departureTime.substr(4, 2));
 
-        if (isNaN(hour) || isNaN(min) || isNaN(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
-            alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
+        if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+            alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive");
         } else {
             // date, hour, min, and sec are of type number
             // date is when train starts its route from home station
             var date = new Date();
             try {
-                date.setHours(hour, min, sec);
+                date.setHours(hour, min);
                 var json_obj = JSON.parse(json_str_train);
                 json_obj.id = trainId;
                 json_obj.departure_time = date.getTime();
@@ -67,35 +66,38 @@ $(document).ready(function() {
         return false;
     });
 
-    // Capture Button Click
+    // Button handler to set the rider variables
     $("#id-find-train").on("click", function() {
         console.log('$("#id-find-train").on("click", function() {');
 
-        rider.origin = $("#id-origin-input").val().trim();
-        rider.destination = $("#id-destination-input").val().trim();
-        if (rider.origin === rider.destination) {
-            alert("Origin and destination stations cannot be the same!");
-        } else {
-            // Get the hours and minutes from form
+        try {
+            // Early basic validation of user input
+            rider.origin = $("#id-origin-input").val().trim();
+            rider.destination = $("#id-destination-input").val().trim();
             var departureTime = $("#id-departure-time-input").val().trim();
-            var hour = parseInt(departureTime.substr(0, 2));
-            var min = parseInt(departureTime.substr(2, 2));
-            var sec = parseInt(departureTime.substr(4, 2));
-            var date = new Date();
-
-            if (isNaN(hour) || isNaN(min) || isNaN(sec) || hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) {
-                alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive, \nSS between 00 and 59 inclusive");
+            if (rider.origin === "") {
+                throw "Origin must be a station";
+            } else if (rider.destination == "") {
+                throw "Origin must be a station";
+            } else if (rider.origin === rider.destination) {
+                throw "Origin and destination stations cannot be the same!";
             } else {
-                try {
-                    date.setHours(hour, min, sec);
+                // Get the hours and minutes from form
+                var hour = parseInt(departureTime.substr(0, 2));
+                var min = parseInt(departureTime.substr(2, 2));
+                var date = new Date();
+
+                if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+                    throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
+                } else {
+                    date.setHours(hour, min);
                     rider.departureTime = date.getTime();
-                } catch (error) {
-                    console.log(error);
+                    updateSchedules();
                 }
-                updateSchedules();
             }
+        } catch (err) {
+            alert(err);
         }
-        console.log('rider: departureTime:' + rider.departureTime + '\n     : origin:' + rider.origin + '\n     :destination:' + rider.destination);
         // Don't refresh the page!
         return false;
     });
@@ -110,13 +112,10 @@ $(document).ready(function() {
 
     function updateSchedules() {
         console.log('function updateSchedules() {');
-
-        if (rider.departureTime === 0 || rider.origin === "" || rider.destination === "") {
-            return false;
-        }
         try {
-            console.log('function updateSchedules() {');
-
+            if (rider.departureTime === 0 || rider.origin === "" || rider.destination === "") {
+                return false;
+            }
             $('#table-train').empty(); // clear out the currently displayed schedules
             // Init database variables.
             var trainRef = firebase.database().ref().child("trains");
@@ -261,7 +260,7 @@ $(document).ready(function() {
         // Don't refresh the page!
         return false;
     });
-        // Capture Button Click
+    // Capture Button Click
     $("#id-add-6-trains").on("click", function() {
         console.log('$("#id-add-24-trains").on("click", function() {');
         resetRider();
@@ -275,7 +274,7 @@ $(document).ready(function() {
             var date = new Date();
 
             try {
-                date.setMinutes(date.getMinutes()+minutes[i], 0);
+                date.setMinutes(date.getMinutes() + minutes[i], 0);
                 var json_obj = JSON.parse(json_str_train);
                 json_obj.id = trainId;
                 json_obj.departure_time = date.getTime();

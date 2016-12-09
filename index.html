@@ -26,7 +26,7 @@
         <div class="row">
             <div class="jumbotron">
                 <h1 class="text-center">Train Schedule</h1>
-                <h2 class="text-center" id="id-time-of-schedule"></h1>
+                <h2 class="text-center" id="id-time-of-schedule"></h2>
             </div>
         </div>
         <div class="row">
@@ -65,7 +65,7 @@
                         <!-- Add Train Form-->
                         <form>
                             <div class="form-group">
-                                <label for="time-input">Departure Time (HHMMSS):</label>
+                                <label for="time-input">Departure Time (HHMM):</label>
                                 <input class="form-control" id="id-departure-time-input" type="text">
                             </div>
                             <div class="form-group">
@@ -97,12 +97,15 @@
                                 <input class="form-control" id="id-train-id-input" type="text">
                             </div>
                             <div class="form-group">
-                                <label for="time-input">Departure Time From Home Station (HHMMSS):</label>
+                                <label for="time-input">Departure Time From Home Station (HHMM):</label>
                                 <input class="form-control" id="id-start-time-input" type="text">
                             </div>
                             <button class="btn btn-default" id="id-add-train" type="submit">Submit</button>
+                            <br>
                             <button class="btn btn-default" id="id-update-schedules" type="submit">Update Schedules</button>
+                            <br>
                             <button class="btn btn-default" id="id-add-24-trains" type="submit">Add 24 houly trains</button>
+                            <br>
                             <button class="btn btn-default" id="id-add-6-trains" type="submit">Add 6 next hour trains</button>
                         </form>
                     </div>
