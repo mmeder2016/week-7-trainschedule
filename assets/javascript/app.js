@@ -25,8 +25,16 @@ $(document).ready(function() {
         }
     };
 
-    // Update the train schedules every minute after
+    // Update the train schedules every minute if there are active trains the
+    // rider can use
     var minuteTimeOut = null;
+
+    // Run a clock in the jumbotron heading
+    setInterval(function() {
+        var dateFormatString = 'MMMM Do YYYY, h:mm:ss a';
+        var now = new Date();
+        $('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
+    }, 1000);
 
     // Add Train
     $("#id-add-train").on("click", function() {
@@ -191,7 +199,7 @@ $(document).ready(function() {
                                 var str = direction + ' ' + rider.origin + ' to ' + rider.destination + ' Schedule for departure time ';
                                 $('#id-current-schedule').text(str + moment(rider.departureTime).format(dateFormatString));
 
-                                $('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
+                                //$('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
 
                                 var minAway = Math.round((stop.arrival - now.getTime()) / 60000);
                                 var arrival = moment(stop.arrival).format(dateFormatString);
