@@ -24,6 +24,8 @@ $(document).ready(function() {
         rider.origin = "";
         rider.destination = "";
     }
+    // Update the train schedules every minute
+    setTimeout(updateSchedules ,60000);
 
     // Add Train
     $("#id-add-train").on("click", function() {
