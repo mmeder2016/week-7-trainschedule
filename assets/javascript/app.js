@@ -1,4 +1,6 @@
 $(document).ready(function() {
+
+    // VARIABLES
     // Initialize Firebase
     var config = {
         apiKey: "AIzaSyAnduVN32mv1-dXtd86tqwljNkhoZbRewM",
@@ -29,6 +31,10 @@ $(document).ready(function() {
     // rider can use
     var minuteTimeOut = null;
 
+    // A hack until I learn Promises, firebase, and how to write atomic functions
+    // in javascript
+    var childRemoveUpdateOn = true;
+
     // Run a clock in the jumbotron heading
     setInterval(function() {
         var dateFormatString = 'MMMM Do YYYY, h:mm:ss a';
@@ -36,46 +42,89 @@ $(document).ready(function() {
         $('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
     }, 1000);
 
+    // Double click to edit cells
+    $(document).on("dblclick", ".cell-edit", function() {
+        console.log('$(document).on("click", "td", function() {');
+        var origText = $(this).text();
+        $(this).html('<input type="text" value="' + origText + '"/>');
+        $(this).children().first().focus();
+        $(this).children().first().keypress(function(e) {
+            if (e.which == 13) {
+                var newText = $(this).val();
+                var id = this.parentNode.getAttribute("id");
+                var key = this.parentNode.parentNode.getAttribute("key");
+                var dbRef = firebase.database().ref().child("trains").child(key);
+                if (id === "type-id") {
+                    // can update if only id changes
+                    dbRef.update({
+                        id: newText
+                    });
+                } else if (id === "type-start-time") {
+                    var departureTime = HHMMtoms(newText);
+                    var trainId = this.parentNode.parentNode.childNodes[0].innerHTML;
+                    // must delete train and add new train to recalculate the
+                    // arrival at all the stations
+                    if (trainId && departureTime) {
+                        // turn off the updateSchedule in the callback. The 
+                        // add Train will take care of it
+                        childRemoveUpdateOn = false;
+                        firebase.database().ref().child("trains").child(key).remove(function() {
+                            console.log("Deleted firebase record with key: " + key);
+                        });
+                        addTrain(trainId, departureTime);
+                    } else {
+                        alert("Did not update database.");
+                    }
+                }
+            }
+        });
+        return false;
+    });
+
+    function HHMMtoms(str) {
+        try {
+            var hour = parseInt(str.substr(0, 2));
+            var min = parseInt(str.substr(2, 2));
+            if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+                throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
+            }
+            var date = new Date();
+            date.setHours(hour, min);
+            return date.getTime();
+        } catch (error) {
+            alert(error);
+        }
+    }
+
     // Add Train
     $("#id-add-train").on("click", function() {
         console.log('$("#id-add-train").on("click", function() {');
-        // Init database variables.
-        var dbRef = firebase.database();
-        var trainRef = dbRef.ref().child("trains");
-
         // Grabbed values from text boxes
         var trainId = $("#id-train-id-input").val().trim();
         var departureTime = $("#id-start-time-input").val().trim();
-
-        // Get the hours and minutes from form
-        var hour = parseInt(departureTime.substr(0, 2));
-        var min = parseInt(departureTime.substr(2, 2));
-
-        if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
-            alert("HHMMSS : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive");
-        } else {
-            // date, hour, min, and sec are of type number
-            // date is when train starts its route from home station
-            var date = new Date();
-            try {
-                date.setHours(hour, min);
-                var json_obj = JSON.parse(json_str_train);
-                json_obj.id = trainId;
-                json_obj.departure_time = date.getTime();
-                json_obj.outbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                json_obj.inbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                trainRef.push(json_obj);
-            } catch (error) {
-                console.log(error);
-            }
-        }
+        var dt = HHMMtoms(departureTime);
+        addTrain(trainId, dt);
         // Don't refresh the page!
         return false;
     });
+
+    function addTrain(trainId, departureTime) {
+        var trainRef = firebase.database().ref().child("trains");
+        try {
+            var json_obj = JSON.parse(json_str_train);
+            json_obj.id = trainId;
+            json_obj.departure_time = departureTime;
+            json_obj.outbound_stops.forEach(function(element) {
+                element.arrival = parseInt(element.sec_from_origin * 1000) + json_obj.departure_time;
+            });
+            json_obj.inbound_stops.forEach(function(element) {
+                element.arrival = parseInt(element.sec_from_origin * 1000) + json_obj.departure_time;
+            });
+            trainRef.push(json_obj);
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
     // Button handler to set the rider variables
     $("#id-find-train").on("click", function() {
@@ -130,7 +179,6 @@ $(document).ready(function() {
         if (minuteTimeOut) {
             clearTimeout(minuteTimeOut);
             minuteTimeOut = null;
-            console.log('clear minuteTimeOut');
         }
         try {
             if (rider.departureTime === 0 || rider.origin === "" || rider.destination === "") {
@@ -176,6 +224,8 @@ $(document).ready(function() {
                         }
 
                         var id = json_obj.id;
+                        var startTime = moment(json_obj.departure_time).format("HHmm");
+
                         var subSchedule = null;
 
                         if (direction === "Outbound") {
@@ -203,20 +253,31 @@ $(document).ready(function() {
 
                                 var minAway = Math.round((stop.arrival - now.getTime()) / 60000);
                                 var arrival = moment(stop.arrival).format(dateFormatString);
-                                var tr = $('<tr class="dyn_tr">');
-                                var td_str = '<td>' + id + '</td>' + '<td>' + rider.origin + '</td>' + '<td>' + rider.destination + '</td>' + '<td>' + frequencyMin + '</td>' + '<td>' + arrival + '</td>' + '<td>' + minAway + '</td>';
+                                var key = childSnapshot.getKey();
+                                var tr = $('<tr class="dyn-train" key="' + key + '">');
+
+                                var idHTML = '<td class="cell-edit" id="type-id">' + id + '</td>';
+                                var startTimeHTML = '<td class="cell-edit" id="type-start-time">' + startTime + '</td>';
+                                var originHTML = '<td>' + rider.origin + '</td>';
+                                var destHTML = '<td>' + rider.destination + '</td>';
+                                var freqHTML = '<td>' + frequencyMin + '</td>';
+                                var arrivalHTML = '<td>' + arrival + '</td>';
+                                var minAwayHTML = '<td>' + minAway + '</td>';
+                                var btnHTML = '<td><button class="btn btn-default" id="id-btn-delete-train" key="' +
+                                    key + '" type="submit">Delete Train</button></td>';
+
+                                var td_str = idHTML + startTimeHTML + originHTML + destHTML + freqHTML + arrivalHTML + minAwayHTML + btnHTML;
+
                                 tr.append(td_str);
 
                                 $('#table-train').append(tr);
                                 // If a train has been added to the schedule table, update table every minute
                                 // But only set it once in this function
                                 if (minuteTimeOut === null) {
-                                    console.log("Set minuteTimeOut");
                                     minuteTimeOut = setTimeout(updateSchedules, 60000);
                                 }
                             }
                         });
-
                     });
                 });
         } catch (err) {
@@ -224,6 +285,17 @@ $(document).ready(function() {
             console.log(err);
         }
     }
+
+    // Capture Button Click
+    $(document).on("click", "#id-btn-delete-train", function() {
+        console.log('$(document).on("click", "#id-btn-delete-train", function() {');
+        var key = $(this).attr("key");
+
+        firebase.database().ref().child("trains").child(key).remove(function() {
+            console.log("Deleted firebase record with key: " + key);
+        });
+        return false;
+    });
 
     firebase.database().ref().on("child_added", function(childSnapshot) {
         console.log('firebase.database().ref().on("child_added", function(childSnapshot) {');
@@ -237,7 +309,11 @@ $(document).ready(function() {
     firebase.database().ref().on("child_changed", function(childSnapshot) {
         console.log('firebase.database().ref().on("child_changed", function(childSnapshot) {');
         // Update with new schedule information
-        updateSchedules();
+        if (childRemoveUpdateOn) {
+            updateSchedules();
+        } else {
+            childRemoveUpdateOn = true;
+        }
         // Handle the errors
     }, function(errorObject) {
         console.log("Errors handled: " + errorObject.code);
@@ -252,66 +328,19 @@ $(document).ready(function() {
         console.log("Errors handled: " + errorObject.code);
     });
 
-    // Train schedule generation
-    $("#id-add-24-trains").on("click", function() {
-        console.log('$("#id-add-24-trains").on("click", function() {');
-        // Init database variables.
-        var dbRef = firebase.database();
-        var trainRef = dbRef.ref().child("trains");
-
-        for (var i = 0; i < 24; i++) {
-            var trainId = i.toString();
-            var date = new Date();
-
-            try {
-                date.setHours(i, 0, 0);
-                var json_obj = JSON.parse(json_str_train);
-                json_obj.id = trainId;
-                json_obj.departure_time = date.getTime();
-                json_obj.outbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                json_obj.inbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                trainRef.push(json_obj);
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        // Don't refresh the page!
-        return false;
-    });
     // Capture Button Click
     $("#id-add-6-trains").on("click", function() {
-        console.log('$("#id-add-24-trains").on("click", function() {');
-        // Init database variables.
-        var dbRef = firebase.database();
-        var trainRef = dbRef.ref().child("trains");
+        console.log('$("#id-add-6-trains").on("click", function() {');
         var minutes = [2, 4, 6, 8, 10, 12];
+        var date = new Date();
 
         for (var i = 0; i < 6; i++) {
             var trainId = "55" + i.toString();
-            var date = new Date();
-
-            try {
-                date.setMinutes(date.getMinutes() + minutes[i], 0);
-                var json_obj = JSON.parse(json_str_train);
-                json_obj.id = trainId;
-                json_obj.departure_time = date.getTime();
-                json_obj.outbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                json_obj.inbound_stops.forEach(function(element) {
-                    element.arrival = parseInt(element.sec_from_origin) + date.getTime();
-                });
-                trainRef.push(json_obj);
-            } catch (error) {
-                console.log(error);
-            }
+            date.setMinutes(date.getMinutes() + minutes[i], 0);
+            departureTime = date.getTime();
+            addTrain(trainId, departureTime);
         }
         // Don't refresh the page!
         return false;
     });
-
 });

@@ -5,3 +5,11 @@
 #id-time-of-schedule {
 	font-weight: bold;
 }
+
+#id-firebase-key{
+	visibility: hidden;
+	width: 0;
+}
+tr {
+	contenteditable: true;
+}
