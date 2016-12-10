@@ -42,7 +42,66 @@ $(document).ready(function() {
         $('#id-time-of-schedule').text(moment(now.getTime()).format(dateFormatString));
     }, 1000);
 
-    // Double click to edit cells
+    // EVENT HANDLERS
+
+    // Find the schedule for your route
+    $("#id-find-train").on("click", function() {
+        console.log('$("#id-find-train").on("click", function() {');
+
+        try {
+            // Early basic validation of user input
+            rider.origin = $("#id-origin-input").val().trim();
+            rider.destination = $("#id-destination-input").val().trim();
+            var departureTime = $("#id-departure-time-input").val().trim();
+            if (rider.origin === "") {
+                throw "Origin must be a station";
+            } else if (rider.destination === "") {
+                throw "Origin must be a station";
+            } else if (rider.origin === rider.destination) {
+                throw "Origin and destination stations cannot be the same!";
+            } else {
+                // Get the hours and minutes from form
+                var hour = parseInt(departureTime.substr(0, 2));
+                var min = parseInt(departureTime.substr(2, 2));
+                var date = new Date();
+
+                if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+                    throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
+                } else {
+                    date.setHours(hour, min);
+                    rider.departureTime = date.getTime();
+                    updateSchedules();
+                    $("#id-origin-input").val("");
+                    $("#id-destination-input").val("");
+                    $("#id-departure-time-input").val("");
+                }
+            }
+        } catch (err) {
+            alert(err);
+        }
+        // Don't refresh the page!
+        return false;
+    });
+
+    // Add Train
+    $("#id-add-train").on("click", function() {
+        console.log('$("#id-add-train").on("click", function() {');
+        // Grabbed values from text boxes
+        var trainId = $("#id-train-id-input").val().trim();
+        var departureTime = $("#id-start-time-input").val().trim();
+        var dt = HHMMtoms(departureTime);
+        if (dt) {
+            addTrain(trainId, dt);
+            $("#id-train-id-input").val("");
+            $("#id-start-time-input").val("");
+        } else {
+            alert("Failed to add train");
+        }
+        // Don't refresh the page!
+        return false;
+    });
+
+    // Edit cells Train Name and Start Time
     $(document).on("dblclick", ".cell-edit", function() {
         console.log('$(document).on("click", "td", function() {');
         var origText = $(this).text();
@@ -78,35 +137,23 @@ $(document).ready(function() {
                 }
             }
         });
-        return false;
-    });
-
-    function HHMMtoms(str) {
-        try {
-            var hour = parseInt(str.substr(0, 2));
-            var min = parseInt(str.substr(2, 2));
-            if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
-                throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
-            }
-            var date = new Date();
-            date.setHours(hour, min);
-            return date.getTime();
-        } catch (error) {
-            alert(error);
-        }
-    }
-
-    // Add Train
-    $("#id-add-train").on("click", function() {
-        console.log('$("#id-add-train").on("click", function() {');
-        // Grabbed values from text boxes
-        var trainId = $("#id-train-id-input").val().trim();
-        var departureTime = $("#id-start-time-input").val().trim();
-        var dt = HHMMtoms(departureTime);
-        addTrain(trainId, dt);
         // Don't refresh the page!
         return false;
     });
+
+    // Delete Train Button Handler
+    $(document).on("click", "#id-btn-delete-train", function() {
+        console.log('$(document).on("click", "#id-btn-delete-train", function() {');
+        var key = $(this).attr("key");
+
+        firebase.database().ref().child("trains").child(key).remove(function() {
+            console.log("Deleted firebase record with key: " + key);
+        });
+        // Don't refresh the page!
+        return false;
+    });
+
+    // FUNCTIONS
 
     function addTrain(trainId, departureTime) {
         var trainRef = firebase.database().ref().child("trains");
@@ -125,50 +172,6 @@ $(document).ready(function() {
             console.log(error);
         }
     }
-
-    // Button handler to set the rider variables
-    $("#id-find-train").on("click", function() {
-        console.log('$("#id-find-train").on("click", function() {');
-
-        try {
-            // Early basic validation of user input
-            rider.origin = $("#id-origin-input").val().trim();
-            rider.destination = $("#id-destination-input").val().trim();
-            var departureTime = $("#id-departure-time-input").val().trim();
-            if (rider.origin === "") {
-                throw "Origin must be a station";
-            } else if (rider.destination === "") {
-                throw "Origin must be a station";
-            } else if (rider.origin === rider.destination) {
-                throw "Origin and destination stations cannot be the same!";
-            } else {
-                // Get the hours and minutes from form
-                var hour = parseInt(departureTime.substr(0, 2));
-                var min = parseInt(departureTime.substr(2, 2));
-                var date = new Date();
-
-                if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
-                    throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
-                } else {
-                    date.setHours(hour, min);
-                    rider.departureTime = date.getTime();
-                    updateSchedules();
-                }
-            }
-        } catch (err) {
-            alert(err);
-        }
-        // Don't refresh the page!
-        return false;
-    });
-
-    // Capture Button Click
-    $("#id-update-schedules").on("click", function() {
-        console.log('$("#id-update-schedules").on("click", function() {');
-        updateSchedules();
-        // Don't refresh the page!
-        return false;
-    });
 
     function updateSchedules() {
         console.log('function updateSchedules() {');
@@ -286,22 +289,27 @@ $(document).ready(function() {
         }
     }
 
-    // Capture Button Click
-    $(document).on("click", "#id-btn-delete-train", function() {
-        console.log('$(document).on("click", "#id-btn-delete-train", function() {');
-        var key = $(this).attr("key");
+    function HHMMtoms(str) {
+        try {
+            var hour = parseInt(str.substr(0, 2));
+            var min = parseInt(str.substr(2, 2));
+            if (Number.isNaN(hour) || Number.isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+                throw "HHMM : \nHH between 00 and 23 inclusive, \nMM between 00 and 59 inclusive";
+            }
+            var date = new Date();
+            date.setHours(hour, min);
+            return date.getTime();
+        } catch (error) {
+            alert(error);
+        }
+    }
 
-        firebase.database().ref().child("trains").child(key).remove(function() {
-            console.log("Deleted firebase record with key: " + key);
-        });
-        return false;
-    });
+    // FIREBASE CALLBACKS
 
     firebase.database().ref().on("child_added", function(childSnapshot) {
         console.log('firebase.database().ref().on("child_added", function(childSnapshot) {');
         // Update with new schedule information
         updateSchedules();
-        // Handle the errors
     }, function(errorObject) {
         console.log("Errors handled: " + errorObject.code);
     });
@@ -309,12 +317,12 @@ $(document).ready(function() {
     firebase.database().ref().on("child_changed", function(childSnapshot) {
         console.log('firebase.database().ref().on("child_changed", function(childSnapshot) {');
         // Update with new schedule information
+        // Do not call updateSchedules if childRemoveUpdateOn is false
         if (childRemoveUpdateOn) {
             updateSchedules();
         } else {
             childRemoveUpdateOn = true;
         }
-        // Handle the errors
     }, function(errorObject) {
         console.log("Errors handled: " + errorObject.code);
     });
@@ -326,21 +334,5 @@ $(document).ready(function() {
         // Handle the errors
     }, function(errorObject) {
         console.log("Errors handled: " + errorObject.code);
-    });
-
-    // Capture Button Click
-    $("#id-add-6-trains").on("click", function() {
-        console.log('$("#id-add-6-trains").on("click", function() {');
-        var minutes = [2, 4, 6, 8, 10, 12];
-        var date = new Date();
-
-        for (var i = 0; i < 6; i++) {
-            var trainId = "55" + i.toString();
-            date.setMinutes(date.getMinutes() + minutes[i], 0);
-            departureTime = date.getTime();
-            addTrain(trainId, departureTime);
-        }
-        // Don't refresh the page!
-        return false;
     });
 });

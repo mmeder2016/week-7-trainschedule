@@ -1,0 +1,68 @@
+    I did no have enough time to add all the features I wanted, but I still 
+have a really cool app with great features that works rather well if the 
+application is used properly. This document will attempt to do this.
+
+    Bootstrap was down significantly during the last 48 hours of development.
+This hurt the usability of the app, mainly the selection of origin and
+destination stations. This must be done manually and the Spelling and 
+capitalization of the characters must match the stations exactly in the list
+below. 
+
+    One of the best features is the app is designed to dynamic and add any 
+train route, for example, a Red Line train, an Amtrack, or any schedule just
+by replacing a properly formatted JSON string “json_str_train” in the file 
+blueline.js.
+
+    This train app is modeled after the train I take to and from class every 
+week, the CTA Blue Line. It starts at the Clark/Lake station, goes out to 
+OHare, stays there for a while, and then returns. There are 17 stations. There
+is an outbound schedule and an inblund schedule. By entering your origin staion
+and destination station, the app will figure out whether you are using the
+inbound or the outbound route.
+
+Clark/Lake
+Grand
+Chicago
+Division
+Damen
+Western
+California
+LoganSquare
+Belmont
+Addison
+IrvingPark
+Montrose
+Jefferson Park
+Harlem
+Cumberland
+Rosemont
+OHare
+
+Adding a train
+  - Enter any string for the Train Id, or name.
+  - Enter the train time in HHMM format for the time the train is leaving the 
+    Clark/Lake train station.
+  - Click Submit
+
+Finding a schedule
+  - Enter the time you will be leaving in HHMM format
+  - Enter the Station you will be leaving from
+  - Enter your destination station.
+  - Click Submit
+
+Limitations
+
+  - The user must enter the station name perfectly form the above list. Because
+    of Bootstrap being down so much, I could not add the drop down lists as
+    originally designed
+
+  - The trains will not be displayed until the user has chosen 
+    - an origin station
+    - a destination station
+    - a start time at the origin station
+
+  - It will only display trains that can get the rider from his origin station 
+    to his destination station based on the current time. The one minute timer 
+    effect removes trains from the list after they have passed the origin 
+    station.
+
